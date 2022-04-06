@@ -716,9 +716,13 @@ BEGIN{
         j2 = 0 + z				# remember last segment seen,
 						# cast to numeric
         if ( Full_Segm[ j2 ] )  {
-            prt_trace( sprintf( "...full segment : %2d %s", j2, Full_Segm[ j2 ] ) )
+            prt_trace( sprintf(					\
+		"...full segment   pos: %2d   text: \"%s\"",	\
+			j2, Full_Segm[ j2 ] ) )
         }
-        prt_trace( sprintf( "...trunc.segment: %2d %s", j2, Segm[ j2 ] ) )
+        prt_trace( sprintf(					\
+		"...trunc.segment  pos: %2d   text: \"%s\"",	\
+			j2, Segm[ j2 ] ) )
         if ( j2 <= i )  {			# if 1st change is in this seg
             i0 = i1				# remember preceding segment
             i1 = j2				# remember 1st changed segm
