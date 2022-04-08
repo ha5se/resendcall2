@@ -39,11 +39,10 @@ function usage( errmsg )  {
     print "              | SEND_TRUNCATED_SEGMENTS }"
     print "Aliases:    { AVANTGARDE | DINOSAUR | CONSERVATIVE |"
     print "              | MODERATE | RELAXED }"
-    print "Optional:   [ ,FULL_3CHAR_CALLS ]  [ ,FULL_FOR_GT1_CHAR_UPD ]"
-    print "            [ ,FULL_FOR_GT1_SEGM_UPD ]  [ ,FULL_FOR_SLASH ]"
-    print "            [ ,REQ_GT1_CHARS_SENT ]  [ ,REQ_GT1_CHARS_SPARED ]"
-    print "            [ ,REQ_MATCHED_CHAR | ,USE_CW_WEIGHT ]"
-    print "            [ ,TRACE | ,VERBOSE ]"
+    print "Optional:   [ ,FULL_FOR_SLASH ]         [ ,FULL_FOR_GT1_CHAR_UPD ]"
+    print "            [ ,FULL_FOR_GT1_SEGM_UPD ]  [ ,REQ_GT1_CHARS_SENT ]"
+    print "            [ ,REQ_GT1_CHARS_SPARED ]   [ ,REQ_MATCHED_CHAR ]"
+    print "            [ ,USE_CW_WEIGHT ]          [ ,TRACE | ,VERBOSE ]"
     print ""
     print "For detailed description, see the associated README"
     rc = 1
@@ -375,10 +374,6 @@ BEGIN{
         printf( "Enter TU message text: " )
         getline w  < "/dev/stdin"
         final_repeat( w )
-    }
-    if ( Opt[ "FULL_3CHAR_CALLS" ]   &&   length( Updtd ) == 3 )  {
-						# if FULL for three chars
-        final_repeat( Updtd )
     }
     if ( Opt[ "FULL_FOR_SLASH" ]   &&   Updtd ~ /[/]/ )  {
 						# if FULL for slash
