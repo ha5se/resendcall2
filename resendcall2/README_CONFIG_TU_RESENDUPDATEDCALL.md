@@ -385,7 +385,7 @@ For ` SEND_TRUNCATED_SEGMENTS `, the difference between some options is:
 |	|	|	| X	|	| 2ABC	|
 |	|	|	|	| X	| W2ABC	|
 |	|	| X	| X	|	| ABC	|
-|	|	| X	| X	| X	| WABC	|
+|	|	| X	| X	| X	| W2ABC	|
 
 
 For more examples, please try the demo script in the test subdirectory, in

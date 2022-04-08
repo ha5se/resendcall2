@@ -589,6 +589,7 @@ BEGIN{
 
     i1 = 1					# prepare low bndry for loop
     j1 = length( Updtd ) + 1			# prepare high bndry for loop
+    Full_Segm[ j1 ] = j1			# prepare dummy trailing segm
 
 
 
