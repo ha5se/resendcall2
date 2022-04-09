@@ -26,6 +26,7 @@
 #			only ignore outer segments & matching in wrong+updtd
 # 2022-04-09 HA5SE  Fix special case only deleting from middle segment;
 #			add more test cases: W567A -> W6A for this fix
+# 2022-04-09 HA5SE  Unify variable using 1st-change-ptr and change-HWM
 
 
 
@@ -320,9 +321,9 @@ function qualify_adjacent_char_or_segm( str,     warray, wndx, wchar, wk_weight 
 
 function add_adjacent_char_or_segm( wleft, wright,   i9, j9 )  {
     prt_trace( "...candidate extra char/segment start  left: " \
-		i0 "  right: " j2 )
+		i0 "  right: " j1 )
     if ( wleft == "" )			{	# if no preceding char/segm
-        j2 += length( wright )			# insert to the right
+        j1 += length( wright )			# insert to the right
     } else
 
     if ( wright == "" )			{	# if no following char/segm
@@ -335,13 +336,13 @@ function add_adjacent_char_or_segm( wleft, wright,   i9, j9 )  {
 						# qualify following char/segm
 	j9++					# prefer following to precedng
         if ( j9 <= i9 )		{		# find the more significant
-            j2 += length( wright )		# insert to the right
+            j1 += length( wright )		# insert to the right
         } else {
             i1 -= length( wleft )		# insert to the left
         }
     }
 
-    w  = substr( Updtd, i1, j2 - i1 )		# changed adjusted text
+    w  = substr( Updtd, i1, j1 - i1 )		# changed adjusted text
     prt_trace( "...change is too short, extra char./segm. added, now: " w )
 }
 
@@ -353,19 +354,19 @@ function add_adjacent_char_or_segm( wleft, wright,   i9, j9 )  {
 
 function add_adjacent_segment(     wxleft, wxright ) {
     wxleft  = UpdtdSegmText[ i0 ]		# preceding segment (on left)
-    wxright = UpdtdSegmText[ j2 ]		# following segment (on right)
+    wxright = UpdtdSegmText[ j1 ]		# following segment (on right)
     prt_trace( "...adjacent extra segment candidate  left: \"" wxleft \
                 "\"  right: \"" wxright "\"")
 
     if ( UpdtdSegmFull[ i1 ]   <   i1 )	{	# if it was really truncated
         i1 = UpdtdSegmFull[ i1 ]		# ignore prefix truncation
-        w  = substr( Updtd, i1, j2 - i1 )	# changed adjusted text
+        w  = substr( Updtd, i1, j1 - i1 )	# changed adjusted text
         prt_trace( "...still not stripping begin trunc segment, now: " w )
     } else
 
-    if ( UpdtdSegmFull[ j2 ]   <   j1 )	{	# if it was really truncated
-        j2 += length( wxright )			# ignore suffix truncation
-        w  = substr( Updtd, i1, j2 - i1 )	# changed adjusted text
+    if ( UpdtdSegmFull[ j1 ]   <   j1 )	{	# if it was really truncated
+        j1 += length( wxright )			# ignore suffix truncation
+        w  = substr( Updtd, i1, j1 - i1 )	# changed adjusted text
         prt_trace( "...still not stripping end trunc segment, now: " w )
     } else				{
 
@@ -387,18 +388,17 @@ function is_common_char_present(      xw, z1 )  {
         return 1				# fake common chars present
     }
 
-    if ( k == 0 )  {				# if added some pre or suffix
+    if ( k1 == 0 )  {				# if added some pre or suffix
         return 1				# matched char already added
     }
 
-    if ( k < i1 )  {
+    if ( k1 <= i1 )  {
         return 0				# no common characters present
     }
 
-    k += j2 - j
-    xw = substr( Wrong, i1, k - i1 )		# changed part in Wrong call
+    xw = substr( Wrong, i1, k1 - i1 )		# changed part in Wrong call
 
-    for ( z1 = i1 ; z1 < j2 ; z1++ )  {
+    for ( z1 = i1 ; z1 < j1 ; z1++ )  {
         if ( index( xw, Updtd_array[ z1 ] )   >  0 )  {
             return 1				# common characters present
         }
@@ -581,8 +581,8 @@ BEGIN{
     #			find the shortest changed part			#
     # -----------------------------------------------------------------	#
 
-    j = split( Updtd, Updtd_array, "" )		# split into individual chars,
-    k = split( Wrong, Wrong_array, "" )		# prepare index for backw loop
+    j1 = split( Updtd, Updtd_array, "" )	# split into individual chars,
+    k1  = split( Wrong, Wrong_array, "" )	# prepare index for backw loop
 
     while ( 1 )  {				# dummy loop executed once,
 						# help break from "if" logic
@@ -592,30 +592,30 @@ BEGIN{
         #	however only a partial "sample", prefix or suffix or similar
         #
 
-        i = index( Updtd, Wrong )		# try to find Wrong in Updtd
+        i1 = index( Updtd, Wrong )		# try to find Wrong in Updtd
 
-        if ( i == 1 )  {			# -- first only rcvd prefix --
-            i = length( Wrong ) + 1		# 1st  changed char
+        if ( i1 == 1 )  {			# -- first only rcvd prefix --
+            i1 = length( Wrong ) + 1		# 1st  changed char
             if ( Opt[ "REQ_MATCHED_CHAR" ] )  {
-                i--				# adjust to last matching
+                i1--				# adjust to last matching
             }
-            j = length( Updtd )			# last changed char in Updtd
-            k = 0				# last changed char in Wrong
+            j1 = length( Updtd )		# last changed char in Updtd
+            k1 = 0				# last changed char in Wrong
             break
         }
 
-        if ( ( i + length( Wrong ) - 1 ) == length( Updtd ) )  {
+        if ( ( i1 + length( Wrong ) - 1 ) == length( Updtd ) )  {
 						# -- first only rcvd suffix --
-            j = i - 1				# last changed char in Updtd
+            j1 = i1 - 1				# last changed char in Updtd
             if ( Opt[ "REQ_MATCHED_CHAR" ] )  {
-                j++				# adjust to 1st matching
+                j1++				# adjust to 1st matching
             }
-            i = 1				# 1st changed char
-            k = 0				# last changed char in Wrong
+            i1 = 1				# 1st changed char in Updtd
+            k1 = 0				# last changed char in Wrong
             break
         }
 
-        if ( i > 1 )  {				# -- first only rcvd middle --
+        if ( i1 > 0 )  {			# -- Wrong is in middle --
             final_repeat( Updtd )
         }
 
@@ -623,35 +623,23 @@ BEGIN{
         #	there are true changes (typos) within the first received call
         #
 
-        i = 1					# prepare for forward loop
+        i1 = 1					# prepare for forward loop
 
-        while ( Wrong_array[ i ]   ==   Updtd_array[ i ] )  {
+        while ( Wrong_array[ i1 ]   ==   Updtd_array[ i1 ] )  {
 						# find 1st leading mis-match
-            i++
+            i1++
         }
 
-        while ( Wrong_array[ k ]   ==   Updtd_array[ j ] )  {
+        while ( Wrong_array[ k1 ]   ==   Updtd_array[ j1 ] )  {
 						# find 1st trailing mis-match
-            k--
-            j--
-        }
-
-        #
-        #	re-adjust "changed" pointers if Wrong is longer than Updtd
-        #
-
-        if ( length( Wrong )   >   length( Updtd ) )  {
-						# if removed some characters
-            if ( i > 1 )  {
-                i--				# back to last leading match
-            }
-            if ( j < length( Updtd ) )   {
-                j++				# back to first trailing match
-                k++
-            }
+            k1--
+            j1--
         }
         break
     }
+
+    j1++					# bump to High Water Mark
+    k1++					# bump to High Water Mark
 
 
 
@@ -665,14 +653,14 @@ BEGIN{
     #
     #	Wrong	wrong call as previously received
     #	Updtd	updated full call
-    #	i	1st  mis-match position in both Wrong and Updtd
-    #	j	last mis-match position in Updtd
-    #	k	last mis-match position in Wrong
+    #	i1	1st  mis-match position in both Wrong and Updtd
+    #	j1	change High Water Mark in Updtd (last mis-match position + 1)
+    #	k1	change High Water Mark in Wrong (last mis-match position + 1)
     #
 
 
 
-    l = j - i + 1				# length of changed text
+    l = j1 - i1					# length of changed text
 
 
     if ( l > 1   &&   Opt[ "FULL_FOR_GT1_CHAR_UPD" ] )  {
@@ -687,24 +675,21 @@ BEGIN{
 
     if ( Opt[ "SEND_SHORTEST" ] )	{	# rest of SEND_SHORTEST logic
 
-        i1 = i					# prepare global pointers
-        j2 = j + 1
-
 	#
 	#	add another extra char if the changed text is too short
 	#
 	#	verify that there is a matching char in the changed part
 	#
 
-        if ( ! is_long_enough( j2 - i1 )  ||  ! is_common_char_present() ) {
+        if ( ! is_long_enough( j1 - i1 )  ||  ! is_common_char_present() ) {
 
             w = Updtd_array[ i1 - 1 ]
-            add_adjacent_char_or_segm( w,  Updtd_array[ j2 ] )
+            add_adjacent_char_or_segm( w,  Updtd_array[ j1 ] )
 						# add adjacent character
 						# on the left or right
         }
 
-        w  = substr( Updtd, i1, j2 - i1 )	# changed adjusted text
+        w  = substr( Updtd, i1, j1 - i1 )	# changed adjusted text
         final_repeat( w )			# resend only changed char(s)
     }
 
@@ -767,10 +752,10 @@ BEGIN{
 					# == 0 if no preceding segment
     i1 = 0				# will be 1st changed segment
     j1 = 0				# will be last changed segment HWM:
-					# = High Water Mark
-    j2 = 0				# will be segm following last changed,
-					# can be used as end of last changed
-					# -> empty string if no following segm
+					# = High Water Mark in Updtd
+					# = empty string if no following segm
+    k1 = 0				# will be last changed segment HWM:
+					# = High Water Mark in Wrong
 
 
     #
@@ -793,28 +778,32 @@ BEGIN{
 
 
     #
-    #	Find the last changed segment
+    #	Find the last changed segment High Water Mark
     #
 
     for ( z in UpdtdSegmRevX )  {		# in reversed segm order now
-        j2 = j1					# remember trailing extra seg
-        j1 = UpdtdSegmRevX[ z ]			# remember last changed seen
-        k  = WrongSegmRevX[ z ]			# corresponding trailing wrong
+        j2 = UpdtdSegmRevX[ z ]			# segment position in Updtd
+        k2 = WrongSegmRevX[ z ]			# corresponding seg pos wrong
 
         if ( z == 1 )  {			# skip empty trailing segm
+            j1 = j2				# remember last HWM seen
+            k1 = k2				# remember last HWM seen
             continue
         }
 
-        if ( UpdtdSegmText[ j1 ]   !=  WrongSegmText[ k ] )	{
+        if ( UpdtdSegmText[ j2 ]   !=  WrongSegmText[ k2 ] )	{
             break
         }
+
+        j1 = j2					# remember last HWM seen
+        k1 = k2					# remember last HWM seen
         prt_trace( sprintf(						\
             "...ignoring trailing seg.  pos: %2d   text: \"%s\"",	\
             j1, UpdtdSegmText[ j1 ] ) )
     }
 
-    prt_trace( sprintf( "...changed 1st/last segm: %2d  %2d", i1, j1 ) )
-    prt_trace( sprintf( "...segm before/after chg: %2d  %2d", i0, j2 ) )
+    prt_trace( sprintf( "...changed 1st/chngd HWM: %2d  %2d", i1, j1 ) )
+    prt_trace( sprintf( "...segm before/after chg: %2d  %2d", i0, j1 ) )
 
 
 
@@ -830,7 +819,7 @@ BEGIN{
     #	verify that there is at least matching char in the changed parts
     #
 
-    if ( ! is_long_enough( j2 - i1 )   ||   ! is_common_char_present() )  {
+    if ( ! is_long_enough( j1 - i1 )   ||   ! is_common_char_present() )  {
 
         add_adjacent_segment()			# add addjacent segment
     }
@@ -841,7 +830,7 @@ BEGIN{
     #	we are done now
     #
 
-    w = substr( Updtd, i1, j2 - i1 )		# changed truncated segment(s)
+    w = substr( Updtd, i1, j1 - i1 )		# changed truncated segment(s)
     final_repeat( w )
 
 }
