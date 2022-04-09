@@ -22,6 +22,8 @@
 #			correct typo in examples
 # 2022-04-09 HA5SE  Implement segment splitting also for wrong call
 # 2022-04-09 HA5SE  Minor cosmetics to improve code readibility
+# 2022-04-09 HA5SE  Change j1 pointer usage "last changed" --> "change HWM";
+#			only ignore outer segments & matching in wrong+updtd
 
 
 
@@ -120,30 +122,28 @@ function is_long_enough( lng )  {
 # -----------------------------------------------------	#
 
 function save_segm_something_slash()  {
-    UpdtdSegmFull[ i1 ] = i1			# save leading full segment
+    wrkSegmFull[ i1 ] = i1			# save leading full segment
     if ( Opt[ "SEND_FULL_SEGMENTS" ] )	{
-        UpdtdSegmText[ i1 ] = substr( w, 1, s1 )
-						# save leading full segment
+        wrkSegmText[ i1 ] = substr( w, 1, s1 )	# save leading full segment
     } else				{
-        UpdtdSegmText[ i1 ] = substr( w, 1, s1 - 1 )
+        wrkSegmText[ i1 ] = substr( w, 1, s1 - 1 )
 						# save leading base segment
-        UpdtdSegmText[ i1 + s1 - 1 ] = "/"	# split at "/"
-        UpdtdSegmFull[ i1 + s1 - 1 ] = i1	# save leading full segment
+        wrkSegmText[ i1 + s1 - 1 ] = "/"	# split at "/"
+        wrkSegmFull[ i1 + s1 - 1 ] = i1		# save leading full segment
     }
     i1 += s1					# bump over saved leading segm
 }
 
 function save_segm_slash_something()  {
     j1 -= RLENGTH				# bump over trailing segment
-    UpdtdSegmFull[ j1 ] = j1			# save trailing full segment
+    wrkSegmFull[ j1 ] = j1			# save trailing full segment
     if ( Opt[ "SEND_FULL_SEGMENTS" ] )	{
-        UpdtdSegmText[ j1 ] = substr( w, RSTART )
-						# save trailing full segment
+        wrkSegmText[ j1 ] = substr( w, RSTART )	# save trailing full segment
     } else				{
-        UpdtdSegmText[ j1 ] = "/"		# split at "/"
-        UpdtdSegmText[ j1 + 1 ] = substr( w, RSTART + 1)
+        wrkSegmText[ j1 ] = "/"			# split at "/"
+        wrkSegmText[ j1 + 1 ] = substr( w, RSTART + 1)
 						# save trailing base segment
-        UpdtdSegmFull[ j1 + 1 ] = j1		# save trailing full segment
+        wrkSegmFull[ j1 + 1 ] = j1		# save trailing full segment
     }
 }
 
@@ -156,8 +156,8 @@ function save_segm_slash_something()  {
 function split_call_into_segments( call,     i1, j1, s1, wx )  {
     i1 = 1					# prepare low bndry for loop
     j1 = length( call ) + 1			# prepare high bndry for loop
-    UpdtdSegmFull[ j1 ] = j1			# prepare dummy trailing segm
-    UpdtdSegmText[ j1 ] = ""			# prepare dummy trailing segm
+    wrkSegmFull[ j1 ] = j1			# prepare dummy trailing segm
+    wrkSegmText[ j1 ] = ""			# prepare dummy trailing segm
 
 
 
@@ -234,17 +234,17 @@ function split_call_into_segments( call,     i1, j1, s1, wx )  {
     #	Split the main call into segments.
     #
 
-    UpdtdSegmFull[ i1 ] = i1			# save full segment
+    wrkSegmFull[ i1 ] = i1			# save full segment
 
     match( w, /[0-9][A-Z]+$/ )			# find end of prefix
     if ( RSTART == 0 )  {			# irregular call, no suffix
-        UpdtdSegmText[ i1 ] = w			# save as segment, e.g. "JY1"
+        wrkSegmText[ i1 ] = w			# save as segment, e.g. "JY1"
 
     } else {					# regular prefix/suffix avail
         wx = substr( w, RSTART + 1 )		# isolate full suffix
-        UpdtdSegmFull[ i1 + RSTART ] = i1 + RSTART
+        wrkSegmFull[ i1 + RSTART ] = i1 + RSTART
 						# save full segment (suffix)
-        UpdtdSegmText[ i1 + RSTART ] = wx	# save base segment (suffix)
+        wrkSegmText[ i1 + RSTART ] = wx	# save base segment (suffix)
 
         w  = substr( w, 1, RSTART )		# isolate full prefix
         if ( Opt[ "SEND_TRUNCATED_SEGMENTS" ] )	{
@@ -256,13 +256,13 @@ function split_call_into_segments( call,     i1, j1, s1, wx )  {
 
                 RSTART++			# force two characters
             }
-            UpdtdSegmText[ i1 ] = substr( w, 1, RSTART )
+            wrkSegmText[ i1 ] = substr( w, 1, RSTART )
 						# save trunc segm (country)
-            UpdtdSegmFull[ i1 + RSTART ] = i1	# save full segment (prefix)
-            UpdtdSegmText[ i1 + RSTART ] = substr( w, RSTART + 1 )
+            wrkSegmFull[ i1 + RSTART ] = i1	# save full segment (prefix)
+            wrkSegmText[ i1 + RSTART ] = substr( w, RSTART + 1 )
 						# save trunc segm (district)
         } else					{
-            UpdtdSegmText[ i1 ] = w		# save base segment (prefix)
+            wrkSegmText[ i1 ] = w		# save base segment (prefix)
         }
 
     }
@@ -352,8 +352,8 @@ function add_adjacent_char_or_segm( wleft, wright,   i9, j9 )  {
 function add_adjacent_segment(     wxleft, wxright ) {
     wxleft  = UpdtdSegmText[ i0 ]		# preceding segment (on left)
     wxright = UpdtdSegmText[ j2 ]		# following segment (on right)
-    prt_trace( "...adjacent extra segment candidate  left: " wxleft \
-                "  right: " wxright )
+    prt_trace( "...adjacent extra segment candidate  left: \"" wxleft \
+                "\"  right: \"" wxright "\"")
 
     if ( UpdtdSegmFull[ i1 ]   <   i1 )	{	# if it was really truncated
         i1 = UpdtdSegmFull[ i1 ]		# ignore prefix truncation
@@ -361,7 +361,7 @@ function add_adjacent_segment(     wxleft, wxright ) {
         prt_trace( "...still not stripping begin trunc segment, now: " w )
     } else
 
-    if ( UpdtdSegmFull[ j2 ] <= j1 )	{	# if it was really truncated
+    if ( UpdtdSegmFull[ j2 ]   <   j1 )	{	# if it was really truncated
         j2 += length( wxright )			# ignore suffix truncation
         w  = substr( Updtd, i1, j2 - i1 )	# changed adjusted text
         prt_trace( "...still not stripping end trunc segment, now: " w )
@@ -419,6 +419,8 @@ BEGIN{
     gsub( /[ ,]+/, ",", Opts )		# parse "opt1 opt2 .." to "opt1,opt2,"
     $0    = Opts
     gsub( /,/, " ")			# parse into $1 $2 ... for loop
+    PROCINFO["sorted_in"] = "@ind_num_asc"
+					# default sort order for asorti
 
 
 
@@ -715,66 +717,99 @@ BEGIN{
     #
     #	Wrong	wrong call as previously received
     #	Updtd	updated full call
-    #	i	1st  mis-match position in both Wrong and Updtd,
-    #		ignoring segment boundaries
-    #	j	last mis-match position in Updtd
-    #		ignoring segment boundaries
-    #	k	last mis-match position in Wrong
-    #		ignoring segment boundaries
     #
 
-    split_call_into_segments( Wrong )	# split wrong call into segments
-    for ( z in UpdtdSegmFull )  {
-        WrongSegmFull[ z ] = UpdtdSegmFull[ i ]
-        WrongSegmText[ z ] = UpdtdSegmText[ i ]
+    split_call_into_segments( Wrong )		# split wrong call into segm
+    for ( z in wrkSegmFull )  {
+        z1 = z + 0				# cast to numeric
+        WrongSegmFull[ z1 ] = wrkSegmFull[ z1 ]
+        WrongSegmText[ z1 ] = wrkSegmText[ z1 ]
+        wrkSegmIndx[ z1 ] = z1			# save seg positions for sort
     }
-    delete UpdtdSegmFull
-    delete UpdtdSegmText
+    asorti( wrkSegmIndx, WrongSegmRevX, "@ind_num_desc" )
+						# array for reverse order,
+						# asorti forces indices 1...
+    delete wrkSegmFull
+    delete wrkSegmText
+    delete wrkSegmIndx
 
-    split_call_into_segments( Updtd)	# split updated call into segments
+
+
+    split_call_into_segments( Updtd)		# split updtd call into segm
+    for ( z in wrkSegmFull )  {			# build index table for sort
+        z1 = z + 0				# cast to numeric
+        UpdtdSegmFull[ z1 ] = wrkSegmFull[ z1 ]
+        UpdtdSegmText[ z1 ] = wrkSegmText[ z1 ]
+        wrkSegmIndx[ z1 ] = z1
+
+        if ( UpdtdSegmFull[ z ]   ==   z1 )  {
+            prt_trace( sprintf( "...full segment   pos: %2d", z1 ) )
+        }
+        prt_trace( sprintf(					\
+            "...trunc.segment  pos: %2d   text: \"%s\"",	\
+            z1, UpdtdSegmText[ z ] ) )
+    }
+    z = asorti( wrkSegmIndx, UpdtdSegmRevX, "@ind_num_desc" )
+						# array for reverse order,
+						# asorti forces indices 1...
+    delete wrkSegmFull
+    delete wrkSegmText
+    delete wrkSegmIndx
 
 
     #
-    #	Find the related (changed) full segment(s)
+    #	Find the changed segment(s)
     #
 
     i0 = 0				# will be segm preceding 1st changed
-					# :: 0 if no preceding segment
-					# -> empty string if no following segm
+					# == 0 if no preceding segment
     i1 = 0				# will be 1st changed segment
-    j1 = 0				# will be last changed segment
-    j2 = 0				# will be segm following last changed
+    j1 = 0				# will be last changed segment HWM:
+					# = High Water Mark
+    j2 = 0				# will be segm following last changed,
 					# can be used as end of last changed
 					# -> empty string if no following segm
 
-    for ( z in UpdtdSegmFull )  {
-        j2 = 0 + z				# remember last segment seen,
+
+    #
+    #	Find the 1st changed segment
+    #
+
+    for ( z in UpdtdSegmFull )  {		# find 1st changed segment
+        i0 = i1					# remember preceding segment
+        i1 = z + 0				# remember 1st changed segm,
 						# cast to numeric
-        if ( UpdtdSegmFull[ j2 ]   ==   j2 )  {
-            prt_trace( sprintf(					\
-		"...full segment   pos: %2d   text: \"%s\"",	\
-			j2, UpdtdSegmFull[ j2 ] ) )
+
+        if ( UpdtdSegmText[ i1 ]   !=  WrongSegmText[ i1 ] )	{
+            break
         }
-        prt_trace( sprintf(					\
-		"...trunc.segment  pos: %2d   text: \"%s\"",	\
-			j2, UpdtdSegmText[ j2 ] ) )
-        if ( j2 <= i )  {			# if 1st change is in this seg
-            i0 = i1				# remember preceding segment
-            i1 = j2				# remember 1st changed segm
-        }
-        if ( j2 <= j )  {			# if last change in this segm
-            j1 = j2				# remember last changed segm
+        prt_trace( sprintf(						\
+            "...ignoring leading segm.  pos: %2d   text: \"%s\"",	\
+            i1, UpdtdSegmText[ i1 ] ) )
+    }
+
+
+
+    #
+    #	Find the last changed segment
+    #
+
+    for ( z in UpdtdSegmRevX )  {		# in reversed segm order now
+        j2 = j1					# remember trailing extra seg
+        j1 = UpdtdSegmRevX[ z ]			# remember last changed seen
+
+        if ( z == 1 )  {			# skip empty trailing segm
             continue
         }
-        break					# if exhasted all changed segm
+
+        if ( UpdtdSegmText[ j1 ]   !=  WrongSegmText[ j1 ] )	{
+            break
+        }
+        prt_trace( sprintf(						\
+            "...ignoring trailing seg.  pos: %2d   text: \"%s\"",	\
+            j1, UpdtdSegmText[ j1 ] ) )
     }
 
-    if ( j2 == j1 )  {				# if no more seg following chg
-        j2 = j1 + length( UpdtdSegmText[ j1 ] )	# compute end of last chg segm
-						# use as dummy following segm
-    }
-
-    prt_trace( sprintf( "...changed 1st/last char: %2d  %2d", i,  j  ) )
     prt_trace( sprintf( "...changed 1st/last segm: %2d  %2d", i1, j1 ) )
     prt_trace( sprintf( "...segm before/after chg: %2d  %2d", i0, j2 ) )
 
