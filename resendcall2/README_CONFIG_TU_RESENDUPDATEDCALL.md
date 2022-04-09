@@ -386,6 +386,24 @@ For ` SEND_TRUNCATED_SEGMENTS `, the difference between some options is:
 |	|	|	|	| X	| W2ABC	|
 |	|	| X	| X	|	| ABC	|
 |	|	| X	| X	| X	| W2ABC	|
+|W6BM	| WB6M	|	|	|	| WB6M	|
+|	|	| X	|	|	| WB6M	|
+|	|	|	| X	|	| WB6M	|
+|	|	|	|	| X	| WB6M	|
+|	|	| X	| X	|	| WB6M	|
+|	|	| X	| X	| X	| WB6M	|
+|WB6M	| W6BM	|	|	|	| W6BM	|
+|	|	| X	|	|	| W6BM	|
+|	|	|	| X	|	| W6BM	|
+|	|	|	|	| X	| W6BM	|
+|	|	| X	| X	|	| W6BM	|
+|	|	| X	| X	| X	| W6BM	|
+|W567A	| W6A	|	|	|	| 6	|
+|	|	| X	|	|	| W6	|
+|	|	|	| X	|	| W6	|
+|	|	|	|	| X	| 6	|
+|	|	| X	| X	|	| W6	|
+|	|	| X	| X	| X	| W6A	|
 
 
 For more examples, please try the demo script in the test subdirectory, in

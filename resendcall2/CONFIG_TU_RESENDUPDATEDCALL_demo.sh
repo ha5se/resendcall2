@@ -24,6 +24,8 @@
 # 2022-04-09 HA5SE  Minor cosmetics to improve code readibility
 # 2022-04-09 HA5SE  Change j1 pointer usage "last changed" --> "change HWM";
 #			only ignore outer segments & matching in wrong+updtd
+# 2022-04-09 HA5SE  Fix special case only deleting from middle segment;
+#			add more test cases: W567A -> W6A for this fix
 
 
 
@@ -797,12 +799,13 @@ BEGIN{
     for ( z in UpdtdSegmRevX )  {		# in reversed segm order now
         j2 = j1					# remember trailing extra seg
         j1 = UpdtdSegmRevX[ z ]			# remember last changed seen
+        k  = WrongSegmRevX[ z ]			# corresponding trailing wrong
 
         if ( z == 1 )  {			# skip empty trailing segm
             continue
         }
 
-        if ( UpdtdSegmText[ j1 ]   !=  WrongSegmText[ j1 ] )	{
+        if ( UpdtdSegmText[ j1 ]   !=  WrongSegmText[ k ] )	{
             break
         }
         prt_trace( sprintf(						\
