@@ -14,6 +14,13 @@
 #
 #
 # 2022-03-20 HA5SE  initial coding
+# 2022-04-06 HA5SE  improve trace msg readibility when splitting into segm
+# 2022-04-08 HA5SE  Clarify explanation for REQ_GT1_CHARS_SPARED,
+#			delete superfluous FULL_3CHAR_CALLS,
+#			add some examples
+# 2022-04-08 HA5SE  Add dummy trailing segment in the example script,
+#			correct typo in examples
+# 2022-04-09 HA5SE  Implement segment splitting also for wrong call
 
 
 
@@ -112,27 +119,151 @@ function is_long_enough( lng )  {
 # -----------------------------------------------------	#
 
 function save_segm_something_slash()  {
-    Full_Segm[ i1 ] = i1			# save leading full segment
+    UpdtdSegmFull[ i1 ] = i1			# save leading full segment
     if ( Opt[ "SEND_FULL_SEGMENTS" ] )	{
-        Segm[ i1 ] = substr( w, 1, s1 )		# save leading full segment
+        UpdtdSegmText[ i1 ] = substr( w, 1, s1 )
+						# save leading full segment
     } else				{
-        Segm[ i1 ] = substr( w, 1, s1 - 1 )	# save leading base segment
-        Segm[ i1 + s1 - 1 ] = "/"		# split at "/"
-        Full_Segm[ i1 + s1 -1 ] = i1		# save leading full segment
+        UpdtdSegmText[ i1 ] = substr( w, 1, s1 - 1 )
+						# save leading base segment
+        UpdtdSegmText[ i1 + s1 - 1 ] = "/"	# split at "/"
+        UpdtdSegmFull[ i1 + s1 - 1 ] = i1	# save leading full segment
     }
     i1 += s1					# bump over saved leading segm
 }
 
 function save_segm_slash_something()  {
     j1 -= RLENGTH				# bump over trailing segment
-    Full_Segm[ j1 ] = j1			# save trailing full segment
+    UpdtdSegmFull[ j1 ] = j1			# save trailing full segment
     if ( Opt[ "SEND_FULL_SEGMENTS" ] )	{
-        Segm[ j1 ] = substr( w, RSTART )	# save trailing full segment
+        UpdtdSegmText[ j1 ] = substr( w, RSTART )
+						# save trailing full segment
     } else				{
-        Segm[ j1 ] = "/"			# split at "/"
-        Segm[ j1 + 1 ] = substr( w, RSTART + 1)
+        UpdtdSegmText[ j1 ] = "/"		# split at "/"
+        UpdtdSegmText[ j1 + 1 ] = substr( w, RSTART + 1)
 						# save trailing base segment
-        Full_Segm[ j1 + 1 ] = j1		# save trailing full segment
+        UpdtdSegmFull[ j1 + 1 ] = j1		# save trailing full segment
+    }
+}
+
+
+
+# -----------------------------------------------------	#
+#		split callsign into segments		#
+# -----------------------------------------------------	#
+
+function split_call_into_segments( call,     i1, j1, s1, wx )  {
+    i1 = 1					# prepare low bndry for loop
+    j1 = length( call ) + 1			# prepare high bndry for loop
+    UpdtdSegmFull[ j1 ] = j1			# prepare dummy trailing segm
+    UpdtdSegmText[ j1 ] = ""			# prepare dummy trailing segm
+
+
+
+    #
+    #	Try to split full leading or trailing outer segments at slash "/"
+    #
+
+    while ( 1 )  {
+        w = substr( call, i1, j1 - i1 )		# remaining unsplit text
+
+        #
+        #	First, try to find trivial "portable" suffix "/P", "/M", "/9"
+        #	Note that loop needed, to allow "W1XY/9/P" for e.g. Field Day
+        #
+
+        match( w, /[/]([0-9APM]|MM)$/ )		# find trivial portable suffix
+        if ( RSTART > 0 )  {			# if "/P", "/M", "/9" found
+            save_segm_slash_something()		# save trailing segment "/P"
+            continue
+        }
+
+
+
+        #
+        #	Try to split full leading or trailing segments at slash "/"
+        #
+
+        s1 = index( w, "/" )			# locate 1st "/"
+        if ( s1 == 0 )  {			# if no more "/"
+            break
+        }
+
+        match( w, /[/][A-Z0-9]+$/ )		# locate last "/"
+
+        if ( RSTART > s1 )  {
+
+            #
+            #	if at least two "/" present,   -- 5B/HA5SE/C  or similar --
+            #
+
+            save_segm_slash_something()		# save trailing segment "/P"
+            save_segm_something_slash()		# save leading segment "5B/"
+            continue
+        }
+
+        #
+        #	only a single "/" present, VP2A/W1XY or 5B/HA5SE or W1XY/ZZZ,
+        #	decide whether the "/" belongs to the first or to the last seg
+        #
+
+        if ( s1  <  ( RLENGTH - 1)   ||   w ~ /[/].*[A-Z]+[0-9]+[A-Z]+$/ )  {
+
+            #
+            #	if first segment is shorter than second,
+            #	or if the second segment is the main callsign
+            #
+
+            save_segm_something_slash()		# save leading segment "5B/"
+
+        } else {
+
+            #
+            #	otherwise, first segment is the main callsign
+            #
+
+            save_segm_slash_something()		# save trailing segment "/P"
+        }
+    }
+
+
+
+    #
+    #	Now only the main callsign has been left unsplitted, without any "/".
+    #	Split the main call into segments.
+    #
+
+    UpdtdSegmFull[ i1 ] = i1			# save full segment
+
+    match( w, /[0-9][A-Z]+$/ )			# find end of prefix
+    if ( RSTART == 0 )  {			# irregular call, no suffix
+        UpdtdSegmText[ i1 ] = w			# save as segment, e.g. "JY1"
+
+    } else {					# regular prefix/suffix avail
+        wx = substr( w, RSTART + 1 )		# isolate full suffix
+        UpdtdSegmFull[ i1 + RSTART ] = i1 + RSTART
+						# save full segment (suffix)
+        UpdtdSegmText[ i1 + RSTART ] = wx	# save base segment (suffix)
+
+        w  = substr( w, 1, RSTART )		# isolate full prefix
+        if ( Opt[ "SEND_TRUNCATED_SEGMENTS" ] )	{
+            match( w, /[A-Z][0-9]+$/ )		# find end of country
+            if ( RSTART == 1   &&   w !~ /^[FGIKMNRUW]/ )  {
+
+		# only "F", "G", "I", "K", ... can be single char country
+		# all others are at least two char, like E29TGW or Z35Y
+
+                RSTART++			# force two characters
+            }
+            UpdtdSegmText[ i1 ] = substr( w, 1, RSTART )
+						# save trunc segm (country)
+            UpdtdSegmFull[ i1 + RSTART ] = i1	# save full segment (prefix)
+            UpdtdSegmText[ i1 + RSTART ] = substr( w, RSTART + 1 )
+						# save trunc segm (district)
+        } else					{
+            UpdtdSegmText[ i1 ] = w		# save base segment (prefix)
+        }
+
     }
 }
 
@@ -173,7 +304,7 @@ function qualify_adjacent_char_or_segm( str,     warray, wndx, wchar, wk_weight 
         }
     }
 
-print "...weight: " wk_weight , str , wchar
+    prt_trace( "...weight: " wk_weight "   " str "   " wchar )
     return wk_weight
 }
 
@@ -185,6 +316,8 @@ print "...weight: " wk_weight , str , wchar
 #
 
 function add_adjacent_char_or_segm( wleft, wright,   i9, j9 )  {
+    prt_trace( "...candidate extra char/segment start  left: " \
+		i0 "  right: " j2 )
     if ( i1 == 1 )			{	# if no preceding char/segm
         j2 += length( wright )			# insert to the right
     } else
@@ -216,19 +349,21 @@ function add_adjacent_char_or_segm( wleft, wright,   i9, j9 )  {
 # -------------------------------------------------------------	#
 
 function add_adjacent_segment(     wxleft, wxright ) {
-    wxleft  = Segm[ i0 ]			# preceding segment (on left)
-    wxright = Segm[ j2 ]			# following segment (on right)
+    wxleft  = UpdtdSegmText[ i0 ]		# preceding segment (on left)
+    wxright = UpdtdSegmText[ j2 ]		# following segment (on right)
+    prt_trace( "...adjacent extra segment candidate  left: " wxleft \
+                "  right: " wxright )
 
-    if ( Full_Segm[ i1 ]   <   i1 )	{	# if it was really truncated
-        i1 = Full_Segm[ i1 ]			# ignore prefix truncation
+    if ( UpdtdSegmFull[ i1 ]   <   i1 )	{	# if it was really truncated
+        i1 = UpdtdSegmFull[ i1 ]		# ignore prefix truncation
         w  = substr( Updtd, i1, j2 - i1 )	# changed adjusted text
-        prt_trace( "...still not strip begin trunc segment, now: " w )
+        prt_trace( "...still not stripping begin trunc segment, now: " w )
     } else
 
-    if ( Full_Segm[ j2 ] <= j1 )	{	# if it was really truncated
+    if ( UpdtdSegmFull[ j2 ] <= j1 )	{	# if it was really truncated
         j2 += length( wxright )			# ignore suffix truncation
         w  = substr( Updtd, i1, j2 - i1 )	# changed adjusted text
-        prt_trace( "...still not strip end trunc segment, now: " w )
+        prt_trace( "...still not stripping end trunc segment, now: " w )
     } else				{
 
 
@@ -587,112 +722,15 @@ BEGIN{
     #		ignoring segment boundaries
     #
 
-    i1 = 1					# prepare low bndry for loop
-    j1 = length( Updtd ) + 1			# prepare high bndry for loop
-    Full_Segm[ j1 ] = j1			# prepare dummy trailing segm
-
-
-
-    #
-    #	Try to split full leading or trailing outer segments at slash "/"
-    #
-
-    while ( 1 )  {
-        w = substr( Updtd, i1, j1 - i1 )	# remaining unsplit text
-
-        #
-        #	First, try to find trivial "portable" suffix "/P", "/M", "/9"
-        #	Note that loop needed, to allow "W1XY/9/P" for e.g. Field Day
-        #
-
-        match( w, /[/]([0-9APM]|MM)$/ )		# find trivial portable suffix
-        if ( RSTART > 0 )  {			# if "/P", "/M", "/9" found
-            save_segm_slash_something()		# save trailing segment "/P"
-            continue
-        }
-
-
-
-        #
-        #	Try to split full leading or trailing segments at slash "/"
-        #
-
-        s1 = index( w, "/" )			# locate 1st "/"
-        if ( s1 == 0 )  {			# if no more "/"
-            break
-        }
-
-        match( w, /[/][A-Z0-9]+$/ )		# locate last "/"
-
-        if ( RSTART > s1 )  {
-
-            #
-            #	if at least two "/" present,   -- 5B/HA5SE/C  or similar --
-            #
-
-            save_segm_slash_something()		# save trailing segment "/P"
-            save_segm_something_slash()		# save leading segment "5B/"
-            continue
-        }
-
-        #
-        #	only a single "/" present, VP2A/W1XY or 5B/HA5SE or W1XY/ZZZ,
-        #	decide whether the "/" belongs to the first or to the last seg
-        #
-
-        if ( s1  <  ( RLENGTH - 1)   ||   w ~ /[/].*[A-Z]+[0-9]+[A-Z]+$/ )  {
-
-            #
-            #	if first segment is shorter than second,
-            #	or if the second segment is the main callsign
-            #
-
-            save_segm_something_slash()		# save leading segment "5B/"
-
-        } else {
-
-            #
-            #	otherwise, first segment is the main callsign
-            #
-
-            save_segm_slash_something()		# save trailing segment "/P"
-        }
+    split_call_into_segments( Wrong )	# split wrong call into segments
+    for ( z in UpdtdSegmFull )  {
+        WrongSegmFull[ z ] = UpdtdSegmFull[ i ]
+        WrongSegmText[ z ] = UpdtdSegmText[ i ]
     }
+    delete UpdtdSegmFull
+    delete UpdtdSegmText
 
-
-
-    #
-    #	Now only the main callsign has been left unsplitted, without any "/".
-    #	Split the main call into segments.
-    #
-
-    Full_Segm[ i1 ] = i1			# save full segment
-
-    match( w, /[0-9][A-Z]+$/ )			# find end of prefix
-    if ( RSTART == 0 )  {			# irregular call, no suffix
-        Segm[ i1 ] = w				# save as segment, e.g. "JY1"
-
-    } else {					# regular prefix/suffix avail.
-        wx = substr( w, RSTART + 1 )		# isolate full suffix
-        Full_Segm[ i1 + RSTART ] = i1 + RSTART	# save full segment (suffix)
-        Segm[ i1 + RSTART ] = wx		# save base segment (suffix)
-
-        w  = substr( w, 1, RSTART )		# isolate full prefix
-        if ( Opt[ "SEND_TRUNCATED_SEGMENTS" ] )	{
-            match( w, /[A-Z][0-9]+$/ )		# find end of country
-            if ( RSTART == 1   &&   w !~ /^[FGIKMNRUW]/ )  {
-                RSTART++
-            }
-            Segm[ i1 ] = substr( w, 1, RSTART )	# save trunc segm (country)
-            Full_Segm[ i1 + RSTART ] = i1	# save full segment (prefix)
-            Segm[ i1 + RSTART ] = substr( w, RSTART + 1 )
-						# save trunc segm (district)
-        } else					{
-            Segm[ i1 ] = w			# save base segment (prefix)
-        }
-
-    }
-
+    split_call_into_segments( Updtd)	# split updated call into segments
 
 
     #
@@ -708,17 +746,17 @@ BEGIN{
 					# can be used as end of last changed
 					# -> empty string if no following segm
 
-    for ( z in Segm )  {
+    for ( z in UpdtdSegmFull )  {
         j2 = 0 + z				# remember last segment seen,
 						# cast to numeric
-        if ( Full_Segm[ j2 ] )  {
+        if ( UpdtdSegmFull[ j2 ]   ==   j2 )  {
             prt_trace( sprintf(					\
 		"...full segment   pos: %2d   text: \"%s\"",	\
-			j2, Full_Segm[ j2 ] ) )
+			j2, UpdtdSegmFull[ j2 ] ) )
         }
         prt_trace( sprintf(					\
 		"...trunc.segment  pos: %2d   text: \"%s\"",	\
-			j2, Segm[ j2 ] ) )
+			j2, UpdtdSegmText[ j2 ] ) )
         if ( j2 <= i )  {			# if 1st change is in this seg
             i0 = i1				# remember preceding segment
             i1 = j2				# remember 1st changed segm
@@ -731,8 +769,8 @@ BEGIN{
     }
 
     if ( j2 == j1 )  {				# if no more seg following chg
-        j2 = j1 + length( Segm[ j1 ] )		# compute end of last chg segm
-        					# use as dummy following segm
+        j2 = j1 + length( UpdtdSegmText[ j1 ] )	# compute end of last chg segm
+						# use as dummy following segm
     }
 
     prt_trace( sprintf( "...changed 1st/last char: %2d  %2d", i,  j  ) )
