@@ -21,6 +21,7 @@
 # 2022-04-08 HA5SE  Add dummy trailing segment in the example script,
 #			correct typo in examples
 # 2022-04-09 HA5SE  Implement segment splitting also for wrong call
+# 2022-04-09 HA5SE  Minor cosmetics to improve code readibility
 
 
 
@@ -318,11 +319,11 @@ function qualify_adjacent_char_or_segm( str,     warray, wndx, wchar, wk_weight 
 function add_adjacent_char_or_segm( wleft, wright,   i9, j9 )  {
     prt_trace( "...candidate extra char/segment start  left: " \
 		i0 "  right: " j2 )
-    if ( i1 == 1 )			{	# if no preceding char/segm
+    if ( wleft == "" )			{	# if no preceding char/segm
         j2 += length( wright )			# insert to the right
     } else
 
-    if ( j2 > length( Updtd ) )		{	# if no following char/segm
+    if ( wright == "" )			{	# if no following char/segm
         i1 -= length( wleft )			# insert to the left
 
     } else				{
