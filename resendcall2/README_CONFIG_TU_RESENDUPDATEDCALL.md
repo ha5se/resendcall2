@@ -45,24 +45,30 @@ Instead of using the natural terms "prefix" or "suffix", rather using the term
 | /P		| full segment			|
 | /		| truncated segment		|
 | P		| base segment			|
-|---------------|-------------------------------|
+|		|				|
 | S521PMC	| full call			|
-|---------------|-------------------------------|
 | S521		| full segment, base segment	|
-| S5		| truncated segment		|
-| 21		| truncated segment		|
+| S		| truncated segment		|
+| 521		| truncated segment		|
 |		|				|
 | PMC		| full segment, base segment,	|
 |		| truncated segment		|
+|		|				|
+| 4U1ITU	| full call			|
+| 4U1		| full segment, base segment	|
+| 4U		| truncated segment		|
+| 1		| truncated segment		|
+| ITU		| full segment, base segment,	|
+|		| truncated segment		|
 |---------------|-------------------------------|
 
-When splitting the prefix into truncated segments (country and a numerical
-district/area), no DXCC table will be used. Instead, to make the logic
-simple, a single character country will only be allowed for __F, G, I, K, M,
-N, R, U__ and __W__. All other countries should be at least two character
-long. In most cases this is true. while for few special rare countries,
-like __CE0X, CE0Y, CE0Z__ etc.  this is not true, but it would not be a big
-deal, anyway.
+Prefix will be interpreted similar to the CQ-WPX rules. When further
+splitting the prefix into truncated segments (country and a numerical
+district/area in normal calls), then one truncated segment will be the
+trailing number(s), and another subsegment will be the rest. For example,
+__9A 205__ or __4U 1__.
+
+
 
 ## Configuration parameter syntax
 

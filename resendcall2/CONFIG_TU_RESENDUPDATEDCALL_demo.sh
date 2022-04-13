@@ -14,7 +14,7 @@
 #
 #
 # 2022-03-20 HA5SE  initial coding
-# 2022-04-06 HA5SE  improve trace msg readibility when splitting into segm
+# 2022-04-06 HA5SE  improve trace msg readibility when splitting into segments
 # 2022-04-08 HA5SE  Clarify explanation for REQ_GT1_CHARS_SPARED,
 #			delete superfluous FULL_3CHAR_CALLS,
 #			add some examples
@@ -27,6 +27,8 @@
 # 2022-04-09 HA5SE  Fix special case only deleting from middle segment;
 #			add more test cases: W567A -> W6A for this fix
 # 2022-04-09 HA5SE  Unify variable using 1st-change-ptr and change-HWM
+# 2022-04-10 HA5SE  Make a more formal definition for splitting prefix into
+#			truncated segments; add demo script for bulk tests
 
 
 
@@ -86,7 +88,7 @@ function final_repeat( Repeat )  {
 						# if only sparing a single char
             Repeat = Updtd			# resend full if req by option
     }
-    printf "Wrong: %-15s, Updtd: %-15s, Resend: %-15s, Optns: %s\n",
+    printf "Wrong: %-11s, Updtd: %-11s, Resend: %-11s, Optns: %s\n",
         Wrong, Updtd, Repeat, Opts
     rc = 0
     exit
@@ -251,19 +253,13 @@ function split_call_into_segments( call,     i1, j1, s1, wx )  {
 
         w  = substr( w, 1, RSTART )		# isolate full prefix
         if ( Opt[ "SEND_TRUNCATED_SEGMENTS" ] )	{
-            match( w, /[A-Z][0-9]+$/ )		# find end of country
-            if ( RSTART == 1   &&   w !~ /^[FGIKMNRUW]/ )  {
-
-		# only "F", "G", "I", "K", ... can be single char country
-		# all others are at least two char, like E29TGW or Z35Y
-
-                RSTART++			# force two characters
-            }
+            match( w, /[A-Z][0-9]+$/ )		# find end of "country"
+						# (=leading part in prefix)
             wrkSegmText[ i1 ] = substr( w, 1, RSTART )
-						# save trunc segm (country)
+						# save trunc segm ("country")
             wrkSegmFull[ i1 + RSTART ] = i1	# save full segment (prefix)
             wrkSegmText[ i1 + RSTART ] = substr( w, RSTART + 1 )
-						# save trunc segm (district)
+						# save trunc seg ("district")
         } else					{
             wrkSegmText[ i1 ] = w		# save base segment (prefix)
         }
