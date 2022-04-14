@@ -29,6 +29,8 @@
 # 2022-04-09 HA5SE  Unify variable using 1st-change-ptr and change-HWM
 # 2022-04-10 HA5SE  Make a more formal definition for splitting prefix into
 #			truncated segments; add demo script for bulk tests
+# 2022-04-14 HA5SE  Fix invalid attempt to use local var since it is hidden
+#			from lower level routines e.g. save_segm_after_slash
 
 
 
@@ -123,32 +125,32 @@ function is_long_enough( lng )  {
 
 
 # -----------------------------------------------------	#
-#	save segment with slash: "/XYZ" or "XYZ/"	#
+#	save segment(s) with slash: "/MM" or "5B/"	#
 # -----------------------------------------------------	#
 
-function save_segm_something_slash()  {
-    wrkSegmFull[ i1 ] = i1			# save leading full segment
+function save_segm_before_slash()  {
+    wrkSegmFull[ i8 ] = i8			# save leading full segm col
     if ( Opt[ "SEND_FULL_SEGMENTS" ] )	{
-        wrkSegmText[ i1 ] = substr( w, 1, s1 )	# save leading full segment
+        wrkSegmText[ i8 ] = substr( w, 1, s8 )	# save leading full segm 5B/
     } else				{
-        wrkSegmText[ i1 ] = substr( w, 1, s1 - 1 )
+        wrkSegmText[ i8 ] = substr( w, 1, s8 - 1 )
 						# save leading base segment
-        wrkSegmText[ i1 + s1 - 1 ] = "/"	# split at "/"
-        wrkSegmFull[ i1 + s1 - 1 ] = i1		# save leading full segment
+        wrkSegmText[ i8 + s8 - 1 ] = "/"	# split at "/"
+        wrkSegmFull[ i8 + s8 - 1 ] = i8		# save leading full segment
     }
-    i1 += s1					# bump over saved leading segm
+    i8 += s8					# bump over saved leading segm
 }
 
-function save_segm_slash_something()  {
-    j1 -= RLENGTH				# bump over trailing segment
-    wrkSegmFull[ j1 ] = j1			# save trailing full segment
+function save_segm_after_slash()  {
+    j8 -= RLENGTH				# back to trailing segm /MM
+    wrkSegmFull[ j8 ] = j8			# save trailing full segm col
     if ( Opt[ "SEND_FULL_SEGMENTS" ] )	{
-        wrkSegmText[ j1 ] = substr( w, RSTART )	# save trailing full segment
+        wrkSegmText[ j8 ] = substr( w, RSTART )	# save trailing full segm /MM
     } else				{
-        wrkSegmText[ j1 ] = "/"			# split at "/"
-        wrkSegmText[ j1 + 1 ] = substr( w, RSTART + 1)
+        wrkSegmText[ j8 ] = "/"			# split at "/"
+        wrkSegmText[ j8 + 1 ] = substr( w, RSTART + 1)
 						# save trailing base segment
-        wrkSegmFull[ j1 + 1 ] = j1		# save trailing full segment
+        wrkSegmFull[ j8 + 1 ] = j8		# save trailing full segment
     }
 }
 
@@ -158,11 +160,11 @@ function save_segm_slash_something()  {
 #		split callsign into segments		#
 # -----------------------------------------------------	#
 
-function split_call_into_segments( call,     i1, j1, s1, wx )  {
-    i1 = 1					# prepare low bndry for loop
-    j1 = length( call ) + 1			# prepare high bndry for loop
-    wrkSegmFull[ j1 ] = j1			# prepare dummy trailing segm
-    wrkSegmText[ j1 ] = ""			# prepare dummy trailing segm
+function split_call_into_segments( call,     wx )  {
+    i8 = 1					# prepare low bndry for loop
+    j8 = length( call ) + 1			# prepare high bndry for loop
+    wrkSegmFull[ j8 ] = j8			# prepare dummy trailing segm
+    wrkSegmText[ j8 ] = ""			# prepare dummy trailing segm
 
 
 
@@ -171,7 +173,7 @@ function split_call_into_segments( call,     i1, j1, s1, wx )  {
     #
 
     while ( 1 )  {
-        w = substr( call, i1, j1 - i1 )		# remaining unsplit text
+        w = substr( call, i8, j8 - i8 )		# remaining unsplit text
 
         #
         #	First, try to find trivial "portable" suffix "/P", "/M", "/9"
@@ -180,7 +182,7 @@ function split_call_into_segments( call,     i1, j1, s1, wx )  {
 
         match( w, /[/]([0-9APM]|MM)$/ )		# find trivial portable suffix
         if ( RSTART > 0 )  {			# if "/P", "/M", "/9" found
-            save_segm_slash_something()		# save trailing segment "/P"
+            save_segm_after_slash()		# save trailing segment "/P"
             continue
         }
 
@@ -190,21 +192,21 @@ function split_call_into_segments( call,     i1, j1, s1, wx )  {
         #	Try to split full leading or trailing segments at slash "/"
         #
 
-        s1 = index( w, "/" )			# locate 1st "/"
-        if ( s1 == 0 )  {			# if no more "/"
+        s8 = index( w, "/" )			# locate 1st "/"
+        if ( s8 == 0 )  {			# if no more "/"
             break
         }
 
         match( w, /[/][A-Z0-9]+$/ )		# locate last "/"
 
-        if ( RSTART > s1 )  {
+        if ( RSTART > s8 )  {
 
             #
             #	if at least two "/" present,   -- 5B/HA5SE/C  or similar --
             #
 
-            save_segm_slash_something()		# save trailing segment "/P"
-            save_segm_something_slash()		# save leading segment "5B/"
+            save_segm_after_slash()		# save trailing segment "/P"
+            save_segm_before_slash()		# save leading segment "5B/"
             continue
         }
 
@@ -213,14 +215,14 @@ function split_call_into_segments( call,     i1, j1, s1, wx )  {
         #	decide whether the "/" belongs to the first or to the last seg
         #
 
-        if ( s1  <  ( RLENGTH - 1)   ||   w ~ /[/].*[A-Z]+[0-9]+[A-Z]+$/ )  {
+        if ( s8  <  ( RLENGTH - 1)   ||   w ~ /[/].*[A-Z]+[0-9]+[A-Z]+$/ )  {
 
             #
             #	if first segment is shorter than second,
             #	or if the second segment is the main callsign
             #
 
-            save_segm_something_slash()		# save leading segment "5B/"
+            save_segm_before_slash()		# save leading segment "5B/"
 
         } else {
 
@@ -228,40 +230,40 @@ function split_call_into_segments( call,     i1, j1, s1, wx )  {
             #	otherwise, first segment is the main callsign
             #
 
-            save_segm_slash_something()		# save trailing segment "/P"
+            save_segm_after_slash()		# save trailing segment "/P"
         }
     }
 
 
 
     #
-    #	Now only the main callsign has been left unsplitted, without any "/".
+    #	Now only the main callsign has been left unsplit, without any "/".
     #	Split the main call into segments.
     #
 
-    wrkSegmFull[ i1 ] = i1			# save full segment
+    wrkSegmFull[ i8 ] = i8			# save full segment
 
     match( w, /[0-9][A-Z]+$/ )			# find end of prefix
     if ( RSTART == 0 )  {			# irregular call, no suffix
-        wrkSegmText[ i1 ] = w			# save as segment, e.g. "JY1"
+        wrkSegmText[ i8 ] = w			# save as segment, e.g. "JY1"
 
     } else {					# regular prefix/suffix avail
         wx = substr( w, RSTART + 1 )		# isolate full suffix
-        wrkSegmFull[ i1 + RSTART ] = i1 + RSTART
+        wrkSegmFull[ i8 + RSTART ] = i8 + RSTART
 						# save full segment (suffix)
-        wrkSegmText[ i1 + RSTART ] = wx	# save base segment (suffix)
+        wrkSegmText[ i8 + RSTART ] = wx		# save base segment (suffix)
 
         w  = substr( w, 1, RSTART )		# isolate full prefix
         if ( Opt[ "SEND_TRUNCATED_SEGMENTS" ] )	{
             match( w, /[A-Z][0-9]+$/ )		# find end of "country"
 						# (=leading part in prefix)
-            wrkSegmText[ i1 ] = substr( w, 1, RSTART )
+            wrkSegmText[ i8 ] = substr( w, 1, RSTART )
 						# save trunc segm ("country")
-            wrkSegmFull[ i1 + RSTART ] = i1	# save full segment (prefix)
-            wrkSegmText[ i1 + RSTART ] = substr( w, RSTART + 1 )
+            wrkSegmFull[ i8 + RSTART ] = i8	# save full segment (prefix)
+            wrkSegmText[ i8 + RSTART ] = substr( w, RSTART + 1 )
 						# save trunc seg ("district")
         } else					{
-            wrkSegmText[ i1 ] = w		# save base segment (prefix)
+            wrkSegmText[ i8 ] = w		# save base segment (prefix)
         }
 
     }
