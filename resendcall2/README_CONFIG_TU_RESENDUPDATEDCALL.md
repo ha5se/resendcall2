@@ -6,16 +6,17 @@ In case no correction is needed, we would like to simply acknowledge the QSO
 with a pure __TU__.
 However, in case we incorrectly copied his call for the first time,
 we usually want to acknowledge the updated (corrected) call as well, like
-__W1XYZ TU__.
+__W2XYZ TU__.
 
 While it is quite obvious to resend the full updated (corrected) call as
 verification, still most contesters prefer to only send the changed part,
 prefix or suffix or something obvious verification. However, to select
-what part to repeat, is the very point where tastes very much differ.
+what part to repeat, is the very point where personal preferences very much
+differ.
 
 Note that known "stupid" pseudo-suffixes as __/QRP__, __/SOTA__, __/YOTA__
 that are not part of the official call sign, will just be ignored by this
-routine. Instead, only the official callsign will be checked for correction.
+concept. Instead, only the official callsign will be checked for correction.
 
 Also note that it is very difficult to define an algorhytm what to re-send
 when the updated call is shorter than the previous estimation. Examples are
@@ -44,7 +45,8 @@ Instead of using the natural terms "prefix" or "suffix", rather using the term
 |		| truncated segment		|
 | /P		| full segment			|
 | /		| truncated segment		|
-| P		| base segment			|
+| P		| base segment,			|
+|		| truncated segment		|
 |		|				|
 | S521PMC	| full call			|
 | S521		| full segment, base segment	|
