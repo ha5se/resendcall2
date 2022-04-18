@@ -412,13 +412,63 @@ For ` SEND_TRUNCATED_SEGMENTS `, the difference between some options is:
 |	|	| X	| X	| X	| W6A	|
 
 
-For more examples, please try the demo script in the test subdirectory, in
-one of the following formats:
-```
-CONFIG_TU_RESENDUPDATEDCALL_demo.sh
-```
-(with no arguments), you will repeatedly get prompted for options and
+
+## Example (demo) scripts
+
+To make more specific example testing, there are two demo scripts available
+in the test subdirectory, one for simple, and another one for bulk examples.
+
+__For bulk examples, use the following script:__
+
+``CONFIG_TU_RESENDUPDATEDCALL_demo_examples.sh <function> 
+[wrong call updated call ...]``
+
+For parameter explanation, use:
+
+``CONFIG_TU_RESENDUPDATEDCALL_demo_examples.sh  -h``
+
+To show all base functions using the default callsign pair(s), use:
+
+``CONFIG_TU_RESENDUPDATEDCALL_demo_examples.sh  BASE_FUNCTIONS``
+
+To show all alias functions using your preferred callsign pair(s), use:
+
+``CONFIG_TU_RESENDUPDATEDCALL_demo_examples.sh BASE_FUNCTIONS xy1abc
+xz2wbc ...``
+
+Except for __CW_WEIGHT__ examples, <function> may be preceded by one of the
+__SHORT:__ or __LONG:__ qualifiers, selecting either the shorter or the
+longer default callsign pair(s), __SHORT:__ being the default. When you also
+provide callsign pair(s), then of course this qualifier is meaningless.
+
+The idea behind this bulk test function is, to help you to find the function
+and options combination nearest to your personal preference. One possible
+approach is to start with __BASE_FUNCTIONS__, then __LONG:BASE_FUNCTIONS__,
+then go on with __ALIAS_FUNCTIONS__ and __LONG:ALIAS_FUNCTIONS__. Finally,
+you could find out the difference with __CW_WEIGHT__. Once you find a
+function to your taste, you can concentrate on that single function on bulk
+test, probably with your own call-sign pair examples. To narrow down to
+single cases, you can test individual cases using the simple test demo script
+(below) in place of the bulk test script.
+
+
+
+__For simple examples, for single function demo, use the following script:__
+
+``CONFIG_TU_RESENDUPDATEDCALL_demo.sh  <wrong call>  <updated call>
+  [options,...``
+
+For parameter explanation, use:
+
+``CONFIG_TU_RESENDUPDATEDCALL_demo.sh -h``
+
+(With no arguments), you will repeatedly get prompted for options and
 callsigns, or, add the options as well:
-```
-CONFIG_TU_RESENDUPDATEDCALL_demo.sh  <wrong call>  <updated call>  options,...
-```
+
+``CONFIG_TU_RESENDUPDATEDCALL_demo.sh``
+
+You can add the function and options as well, the default being
+__SEND_TRUNCATED_SEGMENTS__:
+
+``CONFIG_TU_RESENDUPDATEDCALL_demo.sh  <wrong call>  <updated call>
+[function] [options, ...]``
